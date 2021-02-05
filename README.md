@@ -14,7 +14,7 @@ Basic modules to manage Db2 instance and databases with native db2 command.
 ## TODO
 
 - Add option to use ibm_db python module
-- Convert to Ansible collection
+- Convert this to a Ansible collection with tests. Better: Replace this with an offical db2 module from IBM ;-)
 - Better Docs
 
 ## Usage
@@ -47,4 +47,32 @@ Use it in a playbook as follows.
           ignorable_sqlcodes: "SQL1005N" # SQL1005N: The database alias ... already exists ...
       register: command
       changed_when: "'SQL1005N' not in command.stdout"
+```
+
+## Examples
+
+```yaml
+---
+- hosts: all
+  roles:
+    - role: module_db2
+  tasks:
+    - name: "Get db2 database facts"
+      db2_facts:
+        filter: "databases"
+      register: db2_facts
+
+    - name: "Execute SQL in each database"
+      db2_command:
+        instance: "{{ item.value.instance_name }}"
+        database: "{{ item.value.database_name }}"
+        command: "SELECT count(*) FROM SYSCAT.TABLES"
+      changed_when: False
+      loop: "{{  db2_facts.ansible_facts.db2_database_list | dict2items }}"
+      register: results
+
+    - debug:
+        # Result in stdout like in terminal.
+        # TODO: better enable db2_command to execute SQL with ibm_db2 module
+        msg: "{{ results }}"
 ```
